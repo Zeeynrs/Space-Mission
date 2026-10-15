@@ -214,7 +214,58 @@ export function validateSpacecraftConfiguration(
       category: 'Science Return',
       title: `${scienceComponents.length} Scientific Instruments Configured`,
       message: `Payload suite yields up to ${stats.totalSciencePotential} potential science discovery points across planetary objectives.`,
-      recommendation: 'Ensure communications bandwidth and electrical power can support full payload operation.',
+      recommendation:
+        'Ensure communications bandwidth and electrical power can support full payload operation.',
+    });
+  }
+
+  // 10. Subsystem Structural & Electrical Compatibility
+  const busComp = components.find((c) => c?.category === 'bus');
+  const tankComp = components.find((c) => c?.category === 'tank');
+  const engineComp = components.find((c) => c?.category === 'propulsion');
+  const solarComp = components.find((c) => c?.category === 'solar');
+  const batteryComp = components.find((c) => c?.category === 'battery');
+  const hasRadar = components.some((c) => c?.id === 'sensor-subsurface-radar');
+
+  // 10a. Compact Bus cannot physically accommodate Large Cryo Tank
+  if (busComp?.id === 'bus-cubesat-heavy' && tankComp?.id === 'tank-highcap-large') {
+    blockers.push({
+      id: 'compat-bus-tank-mismatch',
+      severity: 'blocker',
+      category: 'Structural Integration',
+      title: 'Structural Volume Mismatch: Bus & Tank',
+      message:
+        'The Discovery Compact Bus structural bay is too small to physically accommodate the 1100 kg Deep-Space Heavy Tank.',
+      recommendation:
+        'Upgrade to the AURORA Standard Science Bus or switch to a smaller propellant tank.',
+    });
+  }
+
+  // 10b. Ion Propulsion requires UltraFlex or Articulated Tracking Solar Wings
+  if (engineComp?.id === 'engine-hall-electric' && solarComp?.id === 'solar-fixed-flat') {
+    blockers.push({
+      id: 'compat-electric-prop-power',
+      severity: 'blocker',
+      category: 'Electrical Integration',
+      title: 'Incompatible Propulsion & Power Architecture',
+      message:
+        'NEXT-Gen Xenon Hall Thruster draws 320 W continuous, but Fixed Body-Mounted Panels produce only 280 W at Mars. The thruster cannot be ignited.',
+      recommendation:
+        'Install UltraFlex Multi-Junction Solar Wings to supply sufficient electrical drive.',
+    });
+  }
+
+  // 10c. Subsurface Radar requires Deep-Discharge Battery
+  if (hasRadar && batteryComp?.id === 'battery-standard-liion') {
+    warnings.push({
+      id: 'compat-radar-battery-strain',
+      severity: 'warning',
+      category: 'Power Quality',
+      title: 'Radar Sounder Strains Standard Battery Pack',
+      message:
+        'SHARAD Ground-Penetrating Radar draws 90 W pulsing loads that induce voltage sag on the 450 Wh standard battery.',
+      recommendation:
+        'Upgrade to the 980 Wh Deep-Discharge Li-Ion Battery for stable voltage regulation.',
     });
   }
 

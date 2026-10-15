@@ -29,6 +29,7 @@ export interface SpacecraftComponent {
   isp?: number; // Specific Impulse in seconds (s)
   dataRate?: number; // Effective downlink rate at Mars distance (kbps)
   scienceContributions?: ScienceContribution[];
+  isNuclear?: boolean; // If true, power is generated from radioisotope decay (unaffected by solar distance or eclipse)
   description: string;
   rationale: string;
   pros: string[];

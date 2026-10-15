@@ -188,6 +188,22 @@ export const COMPONENT_CATALOG: SpacecraftComponent[] = [
     visualMesh: 'solar_ultraflex',
     slotType: 'single',
   },
+  {
+    id: 'power-rtg-mmrtg',
+    name: 'Multi-Mission RTG (MMRTG Nuclear)',
+    category: 'solar',
+    mass: 45,
+    cost: 45,
+    powerRequired: 0,
+    powerGenerated: 125, // Nuclear Pu-238 decay: continuous 125 W regardless of distance or eclipse
+    isNuclear: true,
+    description: 'Plutonium-238 radioisotope thermoelectric generator. Delivers steady 125W day and night, immune to solar distance drop and orbital eclipse shadows.',
+    rationale: 'High mass and cost, but completely eliminates orbital night battery blackouts and provides total resilience in global dust storms.',
+    pros: ['Immune to solar distance drop (125 W at Mars)', 'Continuous generation during 38-min eclipse', 'Zero dust storm degradation'],
+    cons: ['Heavy dry mass (45 kg)', 'High program cost ($45M)', 'Fixed power output'],
+    visualMesh: 'power_rtg',
+    slotType: 'single',
+  },
 
   // ================= BATTERY =================
   {
@@ -265,6 +281,21 @@ export const COMPONENT_CATALOG: SpacecraftComponent[] = [
     pros: ['High throughput (1.2 Mbps)', 'Unlocks full science scoring potential'],
     cons: ['Demands 110W transmission power', 'Requires precise Earth-pointing gimbal'],
     visualMesh: 'antenna_dish',
+    slotType: 'single',
+  },
+  {
+    id: 'antenna-dsoc-optical',
+    name: 'DSOC Deep Space Optical Laser Terminal',
+    category: 'antenna',
+    mass: 35,
+    cost: 42,
+    powerRequired: 120,
+    dataRate: 25000, // kbps (25 Mbps optical laser!)
+    description: 'Near-infrared laser communications terminal inspired by NASA Psyche DSOC technology demonstration.',
+    rationale: 'Revolutionary 25 Mbps optical downlink to Earth, enabling uncompressed high-resolution planetary data streaming.',
+    pros: ['Phenomenal 25 Mbps bandwidth', 'Lightweight optical telescope (35 kg)', 'Maximizes science downlink speed'],
+    cons: ['High transmission power (120 W)', 'Requires sub-arcsecond Earth tracking stability'],
+    visualMesh: 'antenna_dsoc',
     slotType: 'single',
   },
 
@@ -420,6 +451,33 @@ export const COMPONENT_CATALOG: SpacecraftComponent[] = [
     pros: ['High scientific return (+200 pts)', 'Finds subterranean ice reservoirs'],
     cons: ['High power pulses (90 W)', 'Radar dipole boom visual footprint'],
     visualMesh: 'sensor_radar',
+    slotType: 'multi',
+  },
+  {
+    id: 'sensor-trace-gas',
+    name: 'Trace Gas & Methane Limb Sounder (TGO-ACS)',
+    category: 'science',
+    mass: 32,
+    cost: 38,
+    powerRequired: 50,
+    dataRate: 120,
+    scienceContributions: [
+      {
+        objectiveId: 'obj-atmosphere-trace',
+        points: 200,
+        description: 'Parts-per-trillion sensitivity mapping of atmospheric methane, deuterated water, and sulfur dioxide.',
+      },
+      {
+        objectiveId: 'obj-primary-survey',
+        points: 50,
+        description: 'Limb atmospheric density and dust optical depth vertical profiles.',
+      },
+    ],
+    description: 'Three infrared spectrometers operating in solar occultation geometry to detect trace biogenic and volcanological gases down to parts-per-trillion.',
+    rationale: 'Provides definitive confirmation of Martian atmospheric chemistry and potential biomarker gases.',
+    pros: ['Massive trace gas science bonus (+250 pts total)', 'Exquisite spectral resolution'],
+    cons: ['Draws 50W during observation', 'Demands precise sun-grazing occultation orbits'],
+    visualMesh: 'sensor_trace_gas',
     slotType: 'multi',
   },
 ];

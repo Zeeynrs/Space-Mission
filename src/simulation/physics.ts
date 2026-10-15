@@ -48,6 +48,8 @@ export function calculateEngineeringStats(
   let totalThrustN = 0;
   let effectiveIspS = 0;
   let powerGenerationEarthW = 0;
+  let powerGenerationSolarW = 0;
+  let powerGenerationNuclearW = 0;
   let batteryCapacityWh = 0;
   let powerConsumptionCruiseW = 0;
   let powerConsumptionScienceW = 0;
@@ -73,6 +75,11 @@ export function calculateEngineeringStats(
 
     if (comp.powerGenerated) {
       powerGenerationEarthW += comp.powerGenerated;
+      if (comp.isNuclear) {
+        powerGenerationNuclearW += comp.powerGenerated;
+      } else {
+        powerGenerationSolarW += comp.powerGenerated;
+      }
     }
 
     if (comp.batteryCapacity) {
@@ -112,8 +119,9 @@ export function calculateEngineeringStats(
 
   // Solar flux drops with inverse-square law at Mars (1.524 AU)
   // S_Mars = S_Earth * (1 / 1.524)^2 ~ S_Earth * 0.431
+  // Nuclear power (RTG) does not decay with distance from Sun.
   const powerGenerationMarsW = Math.round(
-    powerGenerationEarthW * AURORA_MISSION.solarFluxMarsRatio
+    powerGenerationSolarW * AURORA_MISSION.solarFluxMarsRatio + powerGenerationNuclearW
   );
 
   // Power margin in daylight at Mars during full science operations
@@ -124,10 +132,14 @@ export function calculateEngineeringStats(
 
   // During eclipse, non-essential science instruments are shut down or duty-cycled.
   // Critical bus load needed to keep computer, thermal heaters, and transponder alive:
-  const criticalEclipseLoadW = components.reduce((acc, comp) => {
-    if (comp.category === 'science') return acc; // science is powered off in darkness
-    return acc + comp.powerRequired;
-  }, 0);
+  // Nuclear RTG power continues generating without interruption in eclipse shadow!
+  const criticalEclipseLoadW = Math.max(
+    0,
+    components.reduce((acc, comp) => {
+      if (comp.category === 'science') return acc; // science is powered off in darkness
+      return acc + comp.powerRequired;
+    }, 0) - powerGenerationNuclearW
+  );
 
   const eclipseEnergyRequiredWh = Math.round(
     criticalEclipseLoadW * eclipseDurationHours
@@ -138,6 +150,8 @@ export function calculateEngineeringStats(
   const eclipseMarginPercent =
     usableBatteryWh > 0
       ? Math.round(((usableBatteryWh - eclipseEnergyRequiredWh) / usableBatteryWh) * 100)
+      : eclipseEnergyRequiredWh === 0
+      ? 100
       : -100;
 
   return {

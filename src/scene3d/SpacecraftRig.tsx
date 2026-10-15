@@ -317,6 +317,31 @@ export function SpacecraftRig({
               </group>
             </group>
           )}
+
+          {solar.id === 'power-rtg-mmrtg' && (
+            // Multi-Mission Radioisotope Thermoelectric Generator (MMRTG)
+            <group position={[1.2, 0.2, 0]}>
+              {/* Structural Cantilever Boom */}
+              <mesh position={[-0.4, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={metalAluminumMat}>
+                <cylinderGeometry args={[0.06, 0.06, 0.8, 8]} />
+              </mesh>
+              {/* Cylindrical Pu-238 Core */}
+              <mesh
+                material={selectedComponentId === solar.id ? highlightMat : metalAluminumMat}
+                castShadow
+              >
+                <cylinderGeometry args={[0.24, 0.24, 0.85, 16]} />
+              </mesh>
+              {/* Radiating Cooling Fins (8 circumferential blades) */}
+              {[0, Math.PI / 4, Math.PI / 2, (3 * Math.PI) / 4].map((ang, i) => (
+                <mesh key={`rtg-fin-${i}`} rotation={[0, ang, 0]} material={metalAluminumMat}>
+                  <boxGeometry args={[0.02, 0.75, 0.7]} />
+                </mesh>
+              ))}
+              {/* Subtle Radioisotope Decay Glow Core */}
+              <pointLight color="#ff7700" intensity={0.4} distance={2} />
+            </group>
+          )}
         </group>
       )}
 
@@ -358,6 +383,32 @@ export function SpacecraftRig({
               {/* Sub-reflector feed horn */}
               <mesh position={[0, 0.5, 0]} rotation={[Math.PI, 0, 0]} material={thrusterCopperMat}>
                 <coneGeometry args={[0.06, 0.15, 8]} />
+              </mesh>
+            </group>
+          )}
+
+          {antenna.id === 'antenna-dsoc-optical' && (
+            // Deep Space Optical Communications (DSOC) Laser Terminal
+            <group position={[0, 0.3, 0.4]} rotation={[0.3, 0.2, 0]}>
+              {/* Two-Axis Gimbal Base */}
+              <mesh position={[0, -0.12, 0]} material={metalAluminumMat}>
+                <cylinderGeometry args={[0.1, 0.12, 0.25, 12]} />
+              </mesh>
+              {/* Optical Telescope Barrel */}
+              <mesh
+                material={selectedComponentId === antenna.id ? highlightMat : metalAluminumMat}
+                castShadow
+              >
+                <cylinderGeometry args={[0.2, 0.22, 0.6, 16]} />
+              </mesh>
+              {/* Sun-Shade Baffle Hood */}
+              <mesh position={[0, 0.32, 0]} material={metalAluminumMat}>
+                <cylinderGeometry args={[0.24, 0.2, 0.12, 16, 1, true]} />
+              </mesh>
+              {/* Laser Collector Lens (Emissive Cyan) */}
+              <mesh position={[0, 0.28, 0]}>
+                <cylinderGeometry args={[0.18, 0.18, 0.02, 16]} />
+                <meshBasicMaterial color="#00e5ff" />
               </mesh>
             </group>
           )}
@@ -459,6 +510,25 @@ export function SpacecraftRig({
               <mesh material={mat} rotation={[0, 0, Math.PI / 2]}>
                 <cylinderGeometry args={[0.02, 0.02, 2.8, 8]} />
               </mesh>
+            </group>
+          );
+        }
+
+        if (inst.id === 'sensor-trace-gas') {
+          // Trace Gas & Methane Limb Sounder (Triple Infrared Spectrometer Barrels)
+          return (
+            <group key={inst.id} position={[-0.45, -0.3, 0.75]} rotation={[-0.2, 0, 0]}>
+              {/* Instrument Housing Chassis */}
+              <mesh material={mat} castShadow>
+                <boxGeometry args={[0.35, 0.25, 0.4]} />
+              </mesh>
+              {/* Triple Occultation Spectrometer Barrels */}
+              {[-0.08, 0, 0.08].map((x, idx) => (
+                <mesh key={`tgo-barrel-${idx}`} position={[x, 0, 0.22]} rotation={[Math.PI / 2, 0, 0]}>
+                  <cylinderGeometry args={[0.03, 0.035, 0.12, 12]} />
+                  <meshStandardMaterial color="#37474f" metalness={0.9} roughness={0.2} />
+                </mesh>
+              ))}
             </group>
           );
         }

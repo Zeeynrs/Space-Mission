@@ -427,4 +427,59 @@ describe('Deterministic Simulation Engine & State Machine', () => {
     expect(nextState.resolvedEvents).toHaveLength(1);
     expect(nextState.resolvedEvents[0].choice.id).toBe('flare-observe');
   });
+
+  it('triggers star tracker glitch in arrival phase and dust storm in science phase', () => {
+    const resolved = new Set<string>();
+
+    const arrivalEvent = checkPhaseEvent('arrival', 0.45, resolved);
+    expect(arrivalEvent).not.toBeNull();
+    expect(arrivalEvent?.id).toBe('event-star-tracker-glitch');
+
+    const scienceStormEvent = checkPhaseEvent('science', 0.3, resolved);
+    expect(scienceStormEvent).not.toBeNull();
+    expect(scienceStormEvent?.id).toBe('event-dust-storm');
+  });
+});
+
+describe('Advanced Deep Space Hardware (RTG, DSOC, Trace Gas)', () => {
+  it('models MMRTG nuclear power without solar flux decay at Mars', () => {
+    const baselineIds = PRESET_CONFIGURATIONS[0].config.installedComponentIds;
+    // Replace solar array with MMRTG
+    const rtgIds = baselineIds
+      .filter((id) => !id.startsWith('solar-'))
+      .concat('power-rtg-mmrtg');
+
+    const stats = calculateEngineeringStats(rtgIds);
+
+    expect(stats.powerGenerationEarthW).toBe(125);
+    // Nuclear power is 100% constant at Mars, not scaled down by 0.431!
+    expect(stats.powerGenerationMarsW).toBe(125);
+    // With 285W critical load and 125W RTG, net load in eclipse is 160W, leaving 85% battery reserve
+    expect(stats.eclipseMarginPercent).toBe(85);
+  });
+
+  it('correctly calculates 25 Mbps optical bandwidth for DSOC laser terminal', () => {
+    const baselineIds = PRESET_CONFIGURATIONS[0].config.installedComponentIds;
+    // Replace antenna with DSOC optical laser
+    const dsocIds = baselineIds
+      .filter((id) => !id.startsWith('antenna-'))
+      .concat('antenna-dsoc-optical');
+
+    const stats = calculateEngineeringStats(dsocIds);
+
+    expect(stats.dataRateMarsKbps).toBe(25000);
+  });
+
+  it('aggregates science potential for Trace Gas Spectrometer (TGO-ACS)', () => {
+    const baselineIds = PRESET_CONFIGURATIONS[0].config.installedComponentIds;
+    const initialStats = calculateEngineeringStats(baselineIds);
+
+    const withTraceGasIds = [...baselineIds, 'sensor-trace-gas'];
+    const statsWithGas = calculateEngineeringStats(withTraceGasIds);
+
+    // sensor-trace-gas contributes 200 + 50 = 250 points
+    expect(statsWithGas.totalSciencePotential).toBe(
+      initialStats.totalSciencePotential + 250
+    );
+  });
 });

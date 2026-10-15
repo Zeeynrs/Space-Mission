@@ -174,6 +174,89 @@ export const MISSION_EVENTS_CATALOG: MissionEvent[] = [
     ],
   },
   {
+    id: 'event-star-tracker-glitch',
+    phase: 'arrival',
+    triggerTimeFraction: 0.4,
+    title: 'Star Tracker Optical Flare & Attitude Stray',
+    description:
+      'A high-energy galactic cosmic ray transient strikes the star tracker CCD array, producing false stellar centroids and triggering an attitude lock warning.',
+    historicalContext:
+      'Experienced by Mars Reconnaissance Orbiter and Cassini during planetary encounter phases.',
+    severity: 'moderate',
+    autoDefaultChoiceId: 'tracker-gyro-inertial',
+    choices: [
+      {
+        id: 'tracker-gyro-inertial',
+        label: 'Switch to Inertial Ring-Laser Gyros',
+        description:
+          'Maintain attitude reference using internal inertial measurement units while the optical star tracker autonomous self-test resets.',
+        tradeoffNotice:
+          'Protects approach trajectory without propellant expenditure. Gyro drift imposes slight attitude error (-2% vehicle integrity).',
+        effect: {
+          healthDeltaPercent: -2,
+          logMessage:
+            'Inertial gyros held spacecraft approach attitude nominally. Optical star tracker re-acquired lock after 4 minutes.',
+        },
+      },
+      {
+        id: 'tracker-recalibrate-sun',
+        label: 'Fire RCS Slew to Coarse Sun Vector',
+        description:
+          'Execute a programmed reaction control thruster slew to re-verify attitude using coarse analog sun sensors.',
+        tradeoffNotice:
+          'Guarantees immediate positive attitude lock, but expends 6 kg of critical reserve propellant.',
+        effect: {
+          propellantDeltaKg: -6,
+          healthDeltaPercent: 0,
+          logMessage:
+            'Coarse sun-sensor slew verified 3-axis pointing lock. 6 kg propellant expended.',
+        },
+      },
+    ],
+  },
+  {
+    id: 'event-dust-storm',
+    phase: 'science',
+    triggerTimeFraction: 0.25,
+    title: 'Planetary Dust Storm Eruption in Chryse Planitia',
+    description:
+      'Global thermal sounders detect a violent regional dust storm rising into the upper atmosphere, degrading optical surface visibility across the northern lowlands.',
+    historicalContext:
+      'Inspired by the 2018 Martian global dust storm observed in multi-wavelength detail by NASA MRO, MAVEN, and ESA Mars Express.',
+    severity: 'moderate',
+    autoDefaultChoiceId: 'storm-radar-pivot',
+    choices: [
+      {
+        id: 'storm-radar-pivot',
+        label: 'Pivot to Radar Sounding & Atmospheric Profiling',
+        description:
+          'Re-allocate observation schedule and downlink priority to subsurface radar sounders and atmospheric IR spectrometers to study dust lofting dynamics.',
+        tradeoffNotice:
+          'Captures high-value atmospheric science (+40 bonus pts) while optical cameras are obscured.',
+        effect: {
+          scienceBonusPoints: 40,
+          healthDeltaPercent: 0,
+          logMessage:
+            'Infrared spectrometers and radar mapped dust column optical density and convective lofting plumes (+40 bonus science pts).',
+        },
+      },
+      {
+        id: 'storm-high-res-wait',
+        label: 'Maintain Optical Imaging at Storm Margins',
+        description:
+          'Keep high-resolution visible camera active to photograph dust devil tracks and dune migration along the clearer storm perimeter.',
+        tradeoffNotice:
+          'Portions of the camera survey are obscured by atmospheric haze (-10% science data yield).',
+        effect: {
+          scienceMultiplier: 0.9,
+          healthDeltaPercent: 0,
+          logMessage:
+            'High-resolution cameras imaged vortex perimeter winds, though thick dust obscured central canyon floors.',
+        },
+      },
+    ],
+  },
+  {
     id: 'event-methane-plume',
     phase: 'science',
     triggerTimeFraction: 0.5,

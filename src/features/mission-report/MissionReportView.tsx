@@ -16,12 +16,19 @@ import {
   History,
   CheckCircle2,
   XCircle,
+  Download,
+  Copy,
+  Check,
+  Award,
+  X,
 } from 'lucide-react';
 
 export function MissionReportView() {
   const { debriefReport, redesignSpacecraft, setActiveScreen } = useMissionStore();
   const { currentConfig } = useSpacecraftStore();
   const [history] = useState<StoredRunRecord[]>(() => loadMissionHistory());
+  const [showCertificateModal, setShowCertificateModal] = useState(false);
+  const [copiedSuccess, setCopiedSuccess] = useState(false);
 
   if (!debriefReport) {
     return (
@@ -47,6 +54,51 @@ export function MissionReportView() {
 
   const isSuccess = outcome === 'success';
   const isPartial = outcome === 'partial';
+
+  const handleDownloadJson = () => {
+    const dataStr =
+      'data:text/json;charset=utf-8,' +
+      encodeURIComponent(JSON.stringify(debriefReport, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute('href', dataStr);
+    downloadAnchor.setAttribute(
+      'download',
+      `orbital-flight-certificate-${currentConfig.name.toLowerCase().replace(/\s+/g, '-')}.json`
+    );
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
+
+  const handleCopyMarkdown = () => {
+    const md = [
+      `# PROJECT AURORA — FLIGHT DEBRIEF CERTIFICATE`,
+      `**Spacecraft:** ${currentConfig.name}`,
+      `**Outcome:** ${outcome.toUpperCase()} (${headline})`,
+      `**Overall Mission Score:** ${score.totalScore} / 1000 PTS`,
+      `**Primary Objective Met:** ${primaryObjectiveMet ? 'YES (Mars Orbit Achieved)' : 'NO (Failed Orbit Capture)'}`,
+      `**Science Yield:** ${score.scienceScore} / 400 PTS`,
+      `**Budget Efficiency:** ${score.budgetEfficiencyScore} / 100 PTS ($${stats.totalCostM}M)`,
+      `**Safety Margin:** ${score.engineeringSafetyScore} / 100 PTS`,
+      `**Simulation Seed:** ${simulationSeed}`,
+      ``,
+      `## Flight Narrative`,
+      `${narrative}`,
+      ``,
+      `## Planetary Objectives Summary`,
+      ...objectivesSummary.map(
+        (obj) => `- [${obj.completed ? 'x' : ' '}] ${obj.title}: ${obj.pointsEarned}/${obj.maxPoints} pts`
+      ),
+      ``,
+      `## Post-Flight Engineering Recommendations`,
+      ...recommendations.map((rec, i) => `${i + 1}. ${rec}`),
+    ].join('\n');
+
+    navigator.clipboard.writeText(md).then(() => {
+      setCopiedSuccess(true);
+      setTimeout(() => setCopiedSuccess(false), 2500);
+    });
+  };
 
   return (
     <div className="w-full max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
@@ -100,19 +152,29 @@ export function MissionReportView() {
             </div>
           </div>
 
-          {/* Total Score Badge */}
-          <div className="bg-space-950/80 border border-space-800 rounded-xl p-4 text-center shrink-0 min-w-[140px]">
-            <span className="text-[10px] font-mono text-slate-400 block uppercase">
-              MISSION SCORE
-            </span>
-            <span
-              className={`text-3xl font-extrabold font-mono ${
-                isSuccess ? 'text-emerald-400' : isPartial ? 'text-amber' : 'text-rose-400'
-              }`}
+          {/* Total Score Badge & Certificate Action */}
+          <div className="flex flex-col items-center gap-2 shrink-0">
+            <div className="bg-space-950/80 border border-space-800 rounded-xl p-4 text-center min-w-[140px]">
+              <span className="text-[10px] font-mono text-slate-400 block uppercase">
+                MISSION SCORE
+              </span>
+              <span
+                className={`text-3xl font-extrabold font-mono ${
+                  isSuccess ? 'text-emerald-400' : isPartial ? 'text-amber' : 'text-rose-400'
+                }`}
+              >
+                {score.totalScore}
+              </span>
+              <span className="text-[10px] font-mono text-slate-500 block">/ 1,000 PTS</span>
+            </div>
+
+            <button
+              onClick={() => setShowCertificateModal(true)}
+              className="w-full py-1.5 px-3 rounded-lg bg-cyan/15 hover:bg-cyan/25 border border-cyan/40 text-cyan text-xs font-mono font-semibold flex items-center justify-center gap-1.5 transition-colors"
             >
-              {score.totalScore}
-            </span>
-            <span className="text-[10px] font-mono text-slate-500 block">/ 1,000 PTS</span>
+              <Award className="w-3.5 h-3.5" />
+              <span>Flight Certificate</span>
+            </button>
           </div>
         </div>
       </div>
@@ -348,14 +410,122 @@ export function MissionReportView() {
             Return to the spacecraft builder with your current configuration intact to apply flight recommendations.
           </p>
         </div>
-        <button
-          onClick={redesignSpacecraft}
-          className="px-6 py-2.5 rounded-lg bg-cyan text-space-950 font-bold text-xs uppercase tracking-wider hover:bg-cyan/90 transition-all flex items-center gap-2 glow-cyan"
-        >
-          <RotateCcw className="w-4 h-4" />
-          <span>Redesign Spacecraft</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowCertificateModal(true)}
+            className="px-4 py-2.5 rounded-lg bg-space-800 hover:bg-space-750 border border-space-700 text-slate-300 font-bold text-xs uppercase tracking-wider flex items-center gap-2"
+          >
+            <Award className="w-4 h-4 text-amber" />
+            <span>Flight Certificate</span>
+          </button>
+
+          <button
+            onClick={redesignSpacecraft}
+            className="px-6 py-2.5 rounded-lg bg-cyan text-space-950 font-bold text-xs uppercase tracking-wider hover:bg-cyan/90 transition-all flex items-center gap-2 glow-cyan"
+          >
+            <RotateCcw className="w-4 h-4" />
+            <span>Redesign Spacecraft</span>
+          </button>
+        </div>
       </div>
+
+      {/* ================= FLIGHT CERTIFICATE MODAL ================= */}
+      {showCertificateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-space-950/80 backdrop-blur-md animate-in fade-in">
+          <div className="relative w-full max-w-2xl bg-space-900 border-2 border-cyan/40 rounded-2xl shadow-2xl overflow-hidden p-6 sm:p-8 space-y-5 font-mono">
+            {/* Close Button */}
+            <button
+              onClick={() => setShowCertificateModal(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-space-800 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Certificate Header Banner */}
+            <div className="text-center space-y-1.5 border-b border-space-800 pb-4">
+              <div className="text-[10px] text-cyan uppercase tracking-widest font-extrabold flex items-center justify-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-cyan"></span>
+                <span>PROJECT AURORA • DEEP SPACE EXPLORATION OFFICE</span>
+                <span className="w-2 h-2 rounded-full bg-cyan"></span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-extrabold text-slate-100 uppercase tracking-tight">
+                CERTIFICATE OF MISSION FLIGHT COMPLETION
+              </h2>
+              <div className="text-xs text-slate-400">
+                This document certifies the orbital simulation record of vehicle:
+              </div>
+              <div className="text-lg font-bold text-amber tracking-wider uppercase">
+                {currentConfig.name}
+              </div>
+            </div>
+
+            {/* Certificate Core Stats Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs text-center">
+              <div className="bg-space-950 p-2.5 rounded border border-space-800">
+                <span className="text-[9px] text-slate-500 block">FLIGHT OUTCOME</span>
+                <span
+                  className={`font-extrabold uppercase ${
+                    isSuccess ? 'text-emerald-400' : isPartial ? 'text-amber' : 'text-rose-400'
+                  }`}
+                >
+                  {outcome}
+                </span>
+              </div>
+              <div className="bg-space-950 p-2.5 rounded border border-space-800">
+                <span className="text-[9px] text-slate-500 block">TOTAL SCORE</span>
+                <span className="text-cyan font-bold text-sm">{score.totalScore} PTS</span>
+              </div>
+              <div className="bg-space-950 p-2.5 rounded border border-space-800">
+                <span className="text-[9px] text-slate-500 block">PROGRAM COST</span>
+                <span className="text-amber font-bold text-sm">${stats.totalCostM}M</span>
+              </div>
+              <div className="bg-space-950 p-2.5 rounded border border-space-800">
+                <span className="text-[9px] text-slate-500 block">LAUNCH MASS</span>
+                <span className="text-slate-200 font-bold text-sm">{stats.launchMassKg} kg</span>
+              </div>
+            </div>
+
+            {/* Certificate Narrative Extract */}
+            <div className="bg-space-950/70 p-3 rounded-lg border border-space-800 text-xs text-slate-300 leading-relaxed italic">
+              "{narrative}"
+            </div>
+
+            {/* Footer Sign-off & Seed */}
+            <div className="flex justify-between items-center text-[10px] text-slate-500 border-t border-space-800 pt-3">
+              <span>SEED VERIFICATION HASH: {simulationSeed}</span>
+              <span>ORBITAL FLIGHT REPRODUCIBILITY: 100% DETERMINISTIC</span>
+            </div>
+
+            {/* Action Buttons: Copy Markdown & Download JSON */}
+            <div className="flex flex-wrap items-center justify-end gap-2.5 pt-2">
+              <button
+                onClick={handleCopyMarkdown}
+                className="px-4 py-2 rounded-lg bg-space-800 hover:bg-space-750 border border-space-700 text-slate-200 text-xs font-bold flex items-center gap-1.5 transition-colors"
+              >
+                {copiedSuccess ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="text-emerald-400">Copied Markdown!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5 text-cyan" />
+                    <span>Copy Markdown Report</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={handleDownloadJson}
+                className="px-4 py-2 rounded-lg bg-cyan text-space-950 hover:bg-cyan/90 text-xs font-bold flex items-center gap-1.5 transition-colors glow-cyan"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Download JSON Certificate</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

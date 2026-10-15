@@ -8,6 +8,8 @@ import { Starfield } from './Starfield';
 import { MissionPhase, MissionTelemetry } from '../types/mission';
 import { WebGLFallback } from './WebGLFallback';
 
+export type CameraDirectorMode = 'orbit' | 'chase' | 'nadir' | 'craft';
+
 interface MissionTimeline3DProps {
   phase: MissionPhase;
   phaseProgress: number;
@@ -19,16 +21,18 @@ function PhaseSceneContent({
   phase,
   phaseProgress,
   installedComponentIds,
+  cameraMode,
 }: {
   phase: MissionPhase;
   phaseProgress: number;
   installedComponentIds: string[];
+  cameraMode: CameraDirectorMode;
 }) {
   const craftGroupRef = useRef<THREE.Group>(null);
   const scanConeRef = useRef<THREE.Mesh>(null);
 
   // Position coordinates per phase
-  useFrame(({ clock }) => {
+  useFrame(({ camera, clock }) => {
     const t = clock.getElapsedTime();
 
     if (craftGroupRef.current) {
@@ -60,6 +64,34 @@ function PhaseSceneContent({
         );
         // Nadir pointing towards Mars center [0,0,0]
         craftGroupRef.current.lookAt(0, 0, 0);
+      }
+
+      // Camera Director tracking
+      const craftPos = craftGroupRef.current.position;
+      if (cameraMode === 'chase') {
+        const desiredPos = new THREE.Vector3(
+          craftPos.x + 1.2,
+          craftPos.y + 0.9,
+          craftPos.z + 3.4
+        );
+        camera.position.lerp(desiredPos, 0.08);
+        camera.lookAt(craftPos.x, craftPos.y, craftPos.z);
+      } else if (cameraMode === 'nadir') {
+        const desiredPos = new THREE.Vector3(
+          craftPos.x * 1.15,
+          craftPos.y + 1.2,
+          craftPos.z * 1.15
+        );
+        camera.position.lerp(desiredPos, 0.08);
+        camera.lookAt(0, 0, 0);
+      } else if (cameraMode === 'craft') {
+        const desiredPos = new THREE.Vector3(
+          craftPos.x + 0.9,
+          craftPos.y + 0.4,
+          craftPos.z + 1.6
+        );
+        camera.position.lerp(desiredPos, 0.08);
+        camera.lookAt(craftPos.x, craftPos.y, craftPos.z);
       }
     }
 
@@ -144,6 +176,7 @@ function PhaseSceneContent({
       </group>
 
       <OrbitControls
+        enabled={cameraMode === 'orbit'}
         enablePan={false}
         enableZoom={true}
         minDistance={3}
@@ -157,6 +190,7 @@ function PhaseSceneContent({
 
 export function MissionTimeline3D(props: MissionTimeline3DProps) {
   const [hasWebGlError, setHasWebGlError] = React.useState(false);
+  const [cameraMode, setCameraMode] = React.useState<CameraDirectorMode>('orbit');
 
   if (hasWebGlError) {
     return (
@@ -189,13 +223,39 @@ export function MissionTimeline3D(props: MissionTimeline3DProps) {
             phase={props.phase}
             phaseProgress={props.phaseProgress}
             installedComponentIds={props.installedComponentIds}
+            cameraMode={cameraMode}
           />
         </Canvas>
       </Suspense>
 
+      {/* Multi-Angle Camera Director Toolbar */}
+      <div className="absolute top-3 right-3 flex items-center bg-space-950/90 backdrop-blur-md p-1 rounded-lg border border-space-800 text-[10px] font-mono shadow-xl gap-1">
+        <span className="text-slate-500 px-1 hidden sm:inline">VIEW:</span>
+        {(
+          [
+            { id: 'orbit', label: 'Orbital' },
+            { id: 'chase', label: 'Chase' },
+            { id: 'nadir', label: 'Nadir' },
+            { id: 'craft', label: 'Vehicle' },
+          ] as const
+        ).map((cam) => (
+          <button
+            key={cam.id}
+            onClick={() => setCameraMode(cam.id)}
+            className={`px-2 py-1 rounded transition-all font-semibold ${
+              cameraMode === cam.id
+                ? 'bg-cyan/20 border border-cyan/40 text-cyan'
+                : 'text-slate-400 hover:text-slate-200 border border-transparent'
+            }`}
+          >
+            {cam.label}
+          </button>
+        ))}
+      </div>
+
       {/* Subtle HUD camera hint */}
       <div className="absolute bottom-2 right-3 pointer-events-none text-[10px] font-mono text-slate-500 uppercase tracking-widest bg-space-900/60 px-2 py-0.5 rounded">
-        Orbit Camera Active • Drag to Inspect
+        {cameraMode === 'orbit' ? 'Orbit Controls Active • Drag to Pan' : `${cameraMode.toUpperCase()} CAM LOCKED`}
       </div>
     </div>
   );

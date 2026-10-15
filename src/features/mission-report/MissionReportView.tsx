@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useMissionStore } from '../../store/useMissionStore';
 import { useSpacecraftStore } from '../../store/useSpacecraftStore';
-import { loadMissionHistory, StoredRunRecord } from '../../utils/storage';
+import { loadMissionHistory, clearMissionHistory, StoredRunRecord } from '../../utils/storage';
+import { COMPONENT_CATALOG } from '../../data/components';
 import {
   Trophy,
   AlertOctagon,
@@ -21,14 +22,19 @@ import {
   Check,
   Award,
   X,
+  ArrowUpRight,
+  ArrowDownRight,
+  Trash2,
+  GitCompare,
 } from 'lucide-react';
 
 export function MissionReportView() {
   const { debriefReport, redesignSpacecraft, setActiveScreen } = useMissionStore();
   const { currentConfig } = useSpacecraftStore();
-  const [history] = useState<StoredRunRecord[]>(() => loadMissionHistory());
+  const [history, setHistory] = useState<StoredRunRecord[]>(() => loadMissionHistory());
   const [showCertificateModal, setShowCertificateModal] = useState(false);
   const [copiedSuccess, setCopiedSuccess] = useState(false);
+
 
   if (!debriefReport) {
     return (
@@ -54,6 +60,31 @@ export function MissionReportView() {
 
   const isSuccess = outcome === 'success';
   const isPartial = outcome === 'partial';
+
+  const previousRun = history.length > 1 ? history[1] : null;
+
+  const handleClearHistory = () => {
+    clearMissionHistory();
+    setHistory([]);
+  };
+
+  const componentDiff = (() => {
+    if (!previousRun || !previousRun.installedComponentIds || previousRun.installedComponentIds.length === 0) {
+      return null;
+    }
+    const currentSet = new Set(currentConfig.installedComponentIds);
+    const prevSet = new Set(previousRun.installedComponentIds);
+
+    const added = currentConfig.installedComponentIds
+      .filter((id) => !prevSet.has(id))
+      .map((id) => COMPONENT_CATALOG.find((c) => c.id === id)?.name || id);
+
+    const removed = previousRun.installedComponentIds
+      .filter((id) => !currentSet.has(id))
+      .map((id) => COMPONENT_CATALOG.find((c) => c.id === id)?.name || id);
+
+    return { added, removed };
+  })();
 
   const handleDownloadJson = () => {
     const dataStr =
@@ -351,12 +382,170 @@ export function MissionReportView() {
         </div>
       </div>
 
+      {/* ================= RUN-TO-RUN ARCHITECTURE DELTA ================= */}
+      {previousRun && (
+        <div className="bg-space-900 border border-space-800 rounded-xl p-5 space-y-4 font-mono text-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-space-800 pb-2">
+            <div className="flex items-center gap-2 text-cyan uppercase font-bold tracking-wider">
+              <GitCompare className="w-4 h-4 text-cyan" />
+              <span>ITERATION DELTA VS PREVIOUS FLIGHT ({previousRun.spacecraftName})</span>
+            </div>
+            <span className="text-[10px] text-slate-400">
+              PREVIOUS OUTCOME:{' '}
+              <span
+                className={`font-bold uppercase ${
+                  previousRun.outcome === 'success'
+                    ? 'text-emerald-400'
+                    : previousRun.outcome === 'partial'
+                    ? 'text-amber'
+                    : 'text-rose-400'
+                }`}
+              >
+                {previousRun.outcome}
+              </span>
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {/* Score Delta */}
+            <div className="p-3 rounded-lg bg-space-950 border border-space-800">
+              <span className="text-[10px] text-slate-500 block uppercase">SCORE DELTA</span>
+              <div className="flex items-center gap-1 mt-0.5">
+                {score.totalScore >= previousRun.totalScore ? (
+                  <ArrowUpRight className="w-4 h-4 text-emerald-400 shrink-0" />
+                ) : (
+                  <ArrowDownRight className="w-4 h-4 text-rose-400 shrink-0" />
+                )}
+                <span
+                  className={`text-base font-bold ${
+                    score.totalScore >= previousRun.totalScore ? 'text-emerald-400' : 'text-rose-400'
+                  }`}
+                >
+                  {score.totalScore >= previousRun.totalScore ? '+' : ''}
+                  {score.totalScore - previousRun.totalScore} pts
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-500 block">
+                {previousRun.totalScore} → {score.totalScore}
+              </span>
+            </div>
+
+            {/* Science Delta */}
+            <div className="p-3 rounded-lg bg-space-950 border border-space-800">
+              <span className="text-[10px] text-slate-500 block uppercase">SCIENCE DELTA</span>
+              <div className="flex items-center gap-1 mt-0.5">
+                {score.scienceScore >= previousRun.sciencePoints ? (
+                  <ArrowUpRight className="w-4 h-4 text-cyan shrink-0" />
+                ) : (
+                  <ArrowDownRight className="w-4 h-4 text-rose-400 shrink-0" />
+                )}
+                <span
+                  className={`text-base font-bold ${
+                    score.scienceScore >= previousRun.sciencePoints ? 'text-cyan' : 'text-rose-400'
+                  }`}
+                >
+                  {score.scienceScore >= previousRun.sciencePoints ? '+' : ''}
+                  {score.scienceScore - previousRun.sciencePoints} pts
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-500 block">
+                {previousRun.sciencePoints} → {score.scienceScore}
+              </span>
+            </div>
+
+            {/* Budget Delta */}
+            <div className="p-3 rounded-lg bg-space-950 border border-space-800">
+              <span className="text-[10px] text-slate-500 block uppercase">BUDGET DELTA</span>
+              <div className="flex items-center gap-1 mt-0.5">
+                {stats.totalCostM <= previousRun.totalCostM ? (
+                  <ArrowDownRight className="w-4 h-4 text-emerald-400 shrink-0" />
+                ) : (
+                  <ArrowUpRight className="w-4 h-4 text-amber shrink-0" />
+                )}
+                <span
+                  className={`text-base font-bold ${
+                    stats.totalCostM <= previousRun.totalCostM ? 'text-emerald-400' : 'text-amber'
+                  }`}
+                >
+                  {stats.totalCostM > previousRun.totalCostM ? '+' : ''}
+                  {(stats.totalCostM - previousRun.totalCostM).toFixed(1)}M
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-500 block">
+                ${previousRun.totalCostM}M → ${stats.totalCostM}M
+              </span>
+            </div>
+
+            {/* Mass Delta */}
+            <div className="p-3 rounded-lg bg-space-950 border border-space-800">
+              <span className="text-[10px] text-slate-500 block uppercase">MASS DELTA</span>
+              <div className="flex items-center gap-1 mt-0.5">
+                {stats.launchMassKg <= previousRun.launchMassKg ? (
+                  <ArrowDownRight className="w-4 h-4 text-emerald-400 shrink-0" />
+                ) : (
+                  <ArrowUpRight className="w-4 h-4 text-amber shrink-0" />
+                )}
+                <span
+                  className={`text-base font-bold ${
+                    stats.launchMassKg <= previousRun.launchMassKg ? 'text-emerald-400' : 'text-amber'
+                  }`}
+                >
+                  {stats.launchMassKg > previousRun.launchMassKg ? '+' : ''}
+                  {stats.launchMassKg - previousRun.launchMassKg} kg
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-500 block">
+                {previousRun.launchMassKg} → {stats.launchMassKg} kg
+              </span>
+            </div>
+          </div>
+
+          {/* Component modifications */}
+          {componentDiff && (componentDiff.added.length > 0 || componentDiff.removed.length > 0) && (
+            <div className="p-3 rounded-lg bg-space-950 border border-space-800 space-y-1.5 text-[11px]">
+              <span className="text-slate-400 font-bold block uppercase text-[10px]">
+                HARDWARE MODIFICATIONS SINCE LAST RUN:
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {componentDiff.added.map((item, idx) => (
+                  <span
+                    key={`added-${idx}`}
+                    className="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 font-semibold"
+                  >
+                    + Installed {item}
+                  </span>
+                ))}
+                {componentDiff.removed.map((item, idx) => (
+                  <span
+                    key={`removed-${idx}`}
+                    className="px-2 py-0.5 rounded bg-rose-500/15 border border-rose-500/40 text-rose-300 font-semibold"
+                  >
+                    - Removed {item}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ================= PREVIOUS RUNS COMPARISON ================= */}
       {history.length > 0 && (
         <div className="bg-space-900 border border-space-800 rounded-xl p-5 space-y-3 font-mono text-xs">
-          <div className="flex items-center gap-2 text-slate-400 uppercase font-bold tracking-wider">
-            <History className="w-4 h-4 text-cyan" />
-            <span>FLIGHT LOG COMPARISON (LAST {history.length} ATTEMPTS)</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-slate-400 uppercase font-bold tracking-wider">
+              <History className="w-4 h-4 text-cyan" />
+              <span>FLIGHT LOG COMPARISON (LAST {history.length} ATTEMPTS)</span>
+            </div>
+
+            <button
+              onClick={handleClearHistory}
+              className="text-[10px] text-slate-500 hover:text-rose-400 flex items-center gap-1 transition-colors"
+              title="Clear all stored flight logs"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Clear History</span>
+            </button>
           </div>
 
           <div className="overflow-x-auto">

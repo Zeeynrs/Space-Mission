@@ -145,7 +145,7 @@ export const useMissionStore = create<MissionStoreState>((set, get) => ({
           simulationState.resolvedEvents,
           simulationState.seed
         );
-        saveMissionReportToHistory(report, spacecraftName);
+        saveMissionReportToHistory(report, spacecraftName, installedComponentIds);
         if (report.outcome === 'success') {
           playMissionSuccess();
         }
@@ -260,7 +260,7 @@ export const useMissionStore = create<MissionStoreState>((set, get) => ({
       simulationState.seed
     );
 
-    saveMissionReportToHistory(report, spacecraftName);
+    saveMissionReportToHistory(report, spacecraftName, installedComponentIds);
     if (report.outcome === 'success') {
       playMissionSuccess();
     }

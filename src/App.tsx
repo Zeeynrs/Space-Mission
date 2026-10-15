@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useMissionStore } from './store/useMissionStore';
+import { useSettingsStore } from './store/useSettingsStore';
 import { NavigationHeader } from './components/NavigationHeader';
 import { TitleScreen } from './features/title-entry/TitleScreen';
 import { MissionBriefingView } from './features/mission-briefing/MissionBriefingView';
@@ -10,11 +11,12 @@ import { DataSourcesView } from './features/data-sources/DataSourcesView';
 
 export function App() {
   const { activeScreen, togglePause, setTimeScale } = useMissionStore();
+  const { toggleSound, reducedMotion } = useSettingsStore();
 
-  // Keyboard navigation shortcuts
+  // Global keyboard navigation shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Avoid triggering when user is editing input (e.g. spacecraft name or seed)
+      // Avoid triggering when user is editing an input or textarea
       if (
         document.activeElement?.tagName === 'INPUT' ||
         document.activeElement?.tagName === 'TEXTAREA'
@@ -31,15 +33,22 @@ export function App() {
         setTimeScale(2);
       } else if (e.key === '5' && activeScreen === 'operations') {
         setTimeScale(5);
+      } else if (e.key === 'm' || e.key === 'M') {
+        toggleSound();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeScreen, togglePause, setTimeScale]);
+  }, [activeScreen, togglePause, setTimeScale, toggleSound]);
 
   return (
-    <div className="min-h-screen bg-space-950 text-slate-100 flex flex-col font-sans selection:bg-cyan selection:text-space-950">
+    <div
+      data-reduced-motion={reducedMotion ? 'true' : 'false'}
+      className={`min-h-screen bg-space-950 text-slate-100 flex flex-col font-sans selection:bg-cyan selection:text-space-950 ${
+        reducedMotion ? 'motion-reduce' : ''
+      }`}
+    >
       {/* Navigation Header */}
       <NavigationHeader />
 

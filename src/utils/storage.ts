@@ -15,10 +15,18 @@ export interface StoredRunRecord {
   spacecraftName: string;
   totalCostM: number;
   launchMassKg: number;
+  deltaVMs?: number;
+  installedComponentIds?: string[];
   sciencePoints: number;
   totalScore: number;
   outcome: 'success' | 'partial' | 'failure';
   headline: string;
+}
+
+export interface UserSettings {
+  soundEnabled: boolean;
+  reducedMotion: boolean;
+  deterministicSeed: number;
 }
 
 function getStorage(): Storage | null {
@@ -72,7 +80,11 @@ export function loadSpacecraftConfig(): SpacecraftConfiguration {
   }
 }
 
-export function saveMissionReportToHistory(report: MissionDebriefReport, spacecraftName: string): void {
+export function saveMissionReportToHistory(
+  report: MissionDebriefReport,
+  spacecraftName: string,
+  installedComponentIds?: string[]
+): void {
   try {
     const storage = getStorage();
     if (!storage) return;
@@ -83,6 +95,8 @@ export function saveMissionReportToHistory(report: MissionDebriefReport, spacecr
       spacecraftName,
       totalCostM: report.stats.totalCostM,
       launchMassKg: report.stats.launchMassKg,
+      deltaVMs: report.stats.deltaVMs,
+      installedComponentIds: installedComponentIds || [],
       sciencePoints: report.score.scienceScore,
       totalScore: report.score.totalScore,
       outcome: report.outcome,
@@ -111,6 +125,49 @@ export function loadMissionHistory(): StoredRunRecord[] {
   }
 }
 
+export function clearMissionHistory(): void {
+  try {
+    const storage = getStorage();
+    if (!storage) return;
+    storage.removeItem(STORAGE_KEYS.MISSION_HISTORY);
+  } catch (err) {
+    console.warn('Failed to clear mission history:', err);
+  }
+}
+
+export function saveUserSettings(settings: UserSettings): void {
+  try {
+    const storage = getStorage();
+    if (!storage) return;
+    storage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+  } catch (err) {
+    console.warn('Failed to save settings to localStorage:', err);
+  }
+}
+
+export function loadUserSettings(): UserSettings {
+  const fallback: UserSettings = {
+    soundEnabled: true,
+    reducedMotion: false,
+    deterministicSeed: 42,
+  };
+  try {
+    const storage = getStorage();
+    if (!storage) return fallback;
+    const raw = storage.getItem(STORAGE_KEYS.SETTINGS);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw);
+    return {
+      soundEnabled: typeof parsed?.soundEnabled === 'boolean' ? parsed.soundEnabled : fallback.soundEnabled,
+      reducedMotion: typeof parsed?.reducedMotion === 'boolean' ? parsed.reducedMotion : fallback.reducedMotion,
+      deterministicSeed: typeof parsed?.deterministicSeed === 'number' ? parsed.deterministicSeed : fallback.deterministicSeed,
+    };
+  } catch (err) {
+    console.warn('Failed to read user settings from storage:', err);
+    return fallback;
+  }
+}
+
 export function clearAllSavedData(): void {
   try {
     const storage = getStorage();
@@ -122,3 +179,4 @@ export function clearAllSavedData(): void {
     console.warn('Failed to clear storage:', err);
   }
 }
+

@@ -1,14 +1,54 @@
+import { useState } from 'react';
 import { useMissionStore } from '../../store/useMissionStore';
-import { SCIENTIFIC_CITATIONS } from '../../data/scientificSources';
+import { CitationCategory, SCIENTIFIC_CITATIONS } from '../../data/scientificSources';
 import {
   BookOpen,
   ExternalLink,
   ChevronLeft,
   ShieldCheck,
+  Calculator,
+  Compass,
+  Radio,
+  Sun,
+  Flame,
+  MapPin,
 } from 'lucide-react';
 
 export function DataSourcesView() {
   const { setActiveScreen } = useMissionStore();
+  const [selectedCategory, setSelectedCategory] = useState<CitationCategory>('all');
+
+  // Interactive Calculator State
+  const [calcIsp, setCalcIsp] = useState(315);
+  const [calcDryMass, setCalcDryMass] = useState(585);
+  const [calcFuelMass, setCalcFuelMass] = useState(650);
+  const [calcDistanceAu, setCalcDistanceAu] = useState(1.524);
+
+  // Computed Values
+  const computedDeltaV = Math.round(
+    calcIsp * 9.80665 * Math.log((calcDryMass + calcFuelMass) / calcDryMass)
+  );
+
+  const computedSolarFlux = Math.round(1361 / (calcDistanceAu * calcDistanceAu));
+  const computedMarsRatio = Math.round((computedSolarFlux / 1361) * 100);
+
+  // Speed of light: 299,792 km/s. 1 AU = 149,597,870 km
+  const computedLightDelaySec = Math.round((calcDistanceAu * 149597870) / 299792);
+  const computedLightDelayMin = (computedLightDelaySec / 60).toFixed(1);
+
+  const filteredCitations =
+    selectedCategory === 'all'
+      ? SCIENTIFIC_CITATIONS
+      : SCIENTIFIC_CITATIONS.filter((c) => c.category === selectedCategory);
+
+  const categoryButtons: { id: CitationCategory; label: string; icon: React.ElementType }[] = [
+    { id: 'all', label: 'All Sources', icon: BookOpen },
+    { id: 'propulsion', label: 'Propulsion & ΔV', icon: Flame },
+    { id: 'power', label: 'Solar & Nuclear Power', icon: Sun },
+    { id: 'comm', label: 'Deep Space Comm', icon: Radio },
+    { id: 'payload', label: 'Science Payloads', icon: Compass },
+    { id: 'geodesy', label: 'Mars Geodesy', icon: MapPin },
+  ];
 
   return (
     <div className="w-full max-w-5xl mx-auto p-4 sm:p-6 space-y-6">
@@ -26,6 +66,9 @@ export function DataSourcesView() {
             <BookOpen className="w-6 h-6 text-cyan" />
             <span>NASA Data Sources & Scientific Assumptions</span>
           </h1>
+          <p className="text-xs text-slate-400 mt-1">
+            Authoritative datasets, astrophysical constants, analytical models, and citations backing ORBITAL.
+          </p>
         </div>
       </div>
 
@@ -78,17 +121,139 @@ export function DataSourcesView() {
         </div>
       </div>
 
+      {/* ================= INTERACTIVE PHYSICS VERIFICATION CALCULATOR ================= */}
+      <div className="bg-space-900 border border-space-800 rounded-xl p-5 space-y-4 font-mono text-xs">
+        <div className="flex items-center gap-2 text-cyan font-bold uppercase tracking-wider">
+          <Calculator className="w-4 h-4 text-cyan" />
+          <span>INTERACTIVE PHYSICS VERIFICATION CALCULATOR</span>
+        </div>
+        <p className="text-slate-400 text-xs">
+          Verify the authoritative analytical equations used by ORBITAL's simulation engine in real-time.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+          {/* Tsiolkovsky Rocket Equation Sandbox */}
+          <div className="p-4 rounded-xl bg-space-950 border border-space-800 space-y-3">
+            <div className="flex items-center justify-between border-b border-space-800 pb-2">
+              <span className="text-slate-200 font-bold flex items-center gap-1.5">
+                <Flame className="w-4 h-4 text-amber" />
+                <span>Tsiolkovsky Rocket Equation</span>
+              </span>
+              <span className="text-[10px] text-amber">ΔV = Isp · g₀ · ln(M_wet / M_dry)</span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="text-[10px] text-slate-500 block">Isp (s)</label>
+                <input
+                  type="number"
+                  value={calcIsp}
+                  onChange={(e) => setCalcIsp(Number(e.target.value))}
+                  className="w-full bg-space-900 border border-space-700 rounded px-2 py-1 text-slate-200 text-xs mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] text-slate-500 block">Dry Mass (kg)</label>
+                <input
+                  type="number"
+                  value={calcDryMass}
+                  onChange={(e) => setCalcDryMass(Number(e.target.value))}
+                  className="w-full bg-space-900 border border-space-700 rounded px-2 py-1 text-slate-200 text-xs mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] text-slate-500 block">Fuel Mass (kg)</label>
+                <input
+                  type="number"
+                  value={calcFuelMass}
+                  onChange={(e) => setCalcFuelMass(Number(e.target.value))}
+                  className="w-full bg-space-900 border border-space-700 rounded px-2 py-1 text-slate-200 text-xs mt-1"
+                />
+              </div>
+            </div>
+
+            <div className="p-2.5 rounded bg-space-900 border border-space-800 flex items-center justify-between">
+              <span className="text-slate-400">Calculated Insertion Velocity:</span>
+              <span className="text-cyan font-bold text-sm">{computedDeltaV} m/s</span>
+            </div>
+          </div>
+
+          {/* Inverse-Square Solar & Light Delay Sandbox */}
+          <div className="p-4 rounded-xl bg-space-950 border border-space-800 space-y-3">
+            <div className="flex items-center justify-between border-b border-space-800 pb-2">
+              <span className="text-slate-200 font-bold flex items-center gap-1.5">
+                <Sun className="w-4 h-4 text-cyan" />
+                <span>Solar Flux & Light-Time Delay</span>
+              </span>
+              <span className="text-[10px] text-cyan">S(r) = S₀ / r² & τ = d / c</span>
+            </div>
+
+            <div>
+              <div className="flex justify-between text-[10px] text-slate-400 mb-1">
+                <span>Distance from Sun / Earth:</span>
+                <span className="text-cyan font-bold">{calcDistanceAu.toFixed(3)} AU</span>
+              </div>
+              <input
+                type="range"
+                min="0.5"
+                max="2.6"
+                step="0.01"
+                value={calcDistanceAu}
+                onChange={(e) => setCalcDistanceAu(Number(e.target.value))}
+                className="w-full accent-cyan cursor-pointer"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="p-2 rounded bg-space-900 border border-space-800">
+                <span className="text-[10px] text-slate-500 block">SOLAR IRRADIANCE</span>
+                <span className="text-amber font-bold">{computedSolarFlux} W/m²</span>
+                <span className="text-[10px] text-slate-500 block">({computedMarsRatio}% of 1 AU)</span>
+              </div>
+
+              <div className="p-2 rounded bg-space-900 border border-space-800">
+                <span className="text-[10px] text-slate-500 block">LIGHT-TIME DELAY</span>
+                <span className="text-cyan font-bold">{computedLightDelayMin} minutes</span>
+                <span className="text-[10px] text-slate-500 block">({computedLightDelaySec} seconds)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ================= CATEGORY FILTER BUTTONS ================= */}
+      <div className="flex flex-wrap items-center gap-2 pt-2">
+        {categoryButtons.map((cat) => {
+          const Icon = cat.icon;
+          const isSelected = selectedCategory === cat.id;
+          return (
+            <button
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-all ${
+                isSelected
+                  ? 'bg-cyan text-space-950 font-bold shadow-[0_0_10px_rgba(0,229,255,0.25)]'
+                  : 'bg-space-900 text-slate-400 hover:text-slate-200 border border-space-800 hover:border-space-700'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              <span>{cat.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* Authoritative Citations Catalog */}
       <div className="space-y-4">
         <h2 className="text-xs font-mono text-slate-400 uppercase tracking-wider font-bold">
-          AUTHORITATIVE SCIENTIFIC REFERENCES
+          AUTHORITATIVE SCIENTIFIC REFERENCES ({filteredCitations.length} CITATIONS)
         </h2>
 
         <div className="space-y-3">
-          {SCIENTIFIC_CITATIONS.map((cit) => (
+          {filteredCitations.map((cit) => (
             <div
               key={cit.id}
-              className="bg-space-900 border border-space-800 rounded-xl p-5 space-y-2 hover:border-space-700 transition-colors"
+              className="bg-space-900 border border-space-800 rounded-xl p-5 space-y-2.5 hover:border-space-700 transition-colors"
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-space-800 pb-2">
                 <h3 className="font-bold text-sm text-slate-100 flex items-center gap-2">

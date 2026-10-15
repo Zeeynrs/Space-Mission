@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useSpacecraftStore } from '../../store/useSpacecraftStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { AURORA_MISSION } from '../../data/mission';
@@ -18,6 +19,11 @@ interface DesignReviewModalProps {
 export function DesignReviewModal({ onClose, onConfirmLaunch }: DesignReviewModalProps) {
   const { currentConfig, stats, validation } = useSpacecraftStore();
   const { deterministicSeed } = useSettingsStore();
+  const [acknowledgedRisks, setAcknowledgedRisks] = useState(false);
+
+  const hasWarnings = validation.warnings.length > 0;
+  const canAuthorizeLaunch = validation.canLaunch && (!hasWarnings || acknowledgedRisks);
+
 
   return (
     <div className="fixed inset-0 z-50 bg-space-950/80 backdrop-blur-md flex items-center justify-center p-4">
@@ -141,6 +147,28 @@ export function DesignReviewModal({ onClose, onConfirmLaunch }: DesignReviewModa
               </div>
             </div>
           )}
+
+          {/* Operational Risk Sign-Off Checkbox */}
+          {validation.blockers.length === 0 && hasWarnings && (
+            <div className="p-3.5 rounded-xl bg-space-950 border border-amber/40 flex items-start gap-3 transition-colors hover:border-amber/60">
+              <input
+                type="checkbox"
+                id="acknowledge-risks-checkbox"
+                checked={acknowledgedRisks}
+                onChange={(e) => setAcknowledgedRisks(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-amber/50 bg-space-900 text-amber focus:ring-amber/50 accent-amber cursor-pointer"
+              />
+              <label
+                htmlFor="acknowledge-risks-checkbox"
+                className="text-xs text-amber-200 cursor-pointer select-none leading-relaxed"
+              >
+                <span className="font-semibold block text-amber uppercase tracking-wider text-[11px]">
+                  Flight Director Risk Sign-Off Required
+                </span>
+                I have reviewed the {validation.warnings.length} operational risk warning{validation.warnings.length > 1 ? 's' : ''} above and authorize launch with these telemetry constraints.
+              </label>
+            </div>
+          )}
         </div>
 
         {/* Modal Action Footer */}
@@ -159,10 +187,17 @@ export function DesignReviewModal({ onClose, onConfirmLaunch }: DesignReviewModa
 
             <button
               onClick={onConfirmLaunch}
-              disabled={!validation.canLaunch}
+              disabled={!canAuthorizeLaunch}
+              title={
+                !validation.canLaunch
+                  ? 'Resolve critical blockers before launch'
+                  : hasWarnings && !acknowledgedRisks
+                  ? 'Sign off on operational risk warnings to authorize launch'
+                  : 'Commence TMI countdown'
+              }
               className={`px-6 py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 w-full sm:w-auto ${
-                validation.canLaunch
-                  ? 'bg-cyan text-space-950 hover:bg-cyan/90 glow-cyan'
+                canAuthorizeLaunch
+                  ? 'bg-cyan text-space-950 hover:bg-cyan/90 glow-cyan cursor-pointer'
                   : 'bg-space-800 text-slate-500 border border-space-700 cursor-not-allowed'
               }`}
             >

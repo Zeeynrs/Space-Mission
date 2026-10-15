@@ -130,8 +130,8 @@ export const useSpacecraftStore = create<SpacecraftState>((set, get) => ({
   },
 
   resetToDefault: () => {
-    const baseline = PRESET_CONFIGURATIONS[0].config;
-    get().loadPreset(baseline.id);
+    const baseline = PRESET_CONFIGURATIONS[0];
+    get().loadPreset(baseline.presetId);
   },
 
   setSelectedComponentId: (id: string | null) => {

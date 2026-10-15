@@ -34,7 +34,7 @@ const CATEGORIES: { id: ComponentCategory; label: string; icon: React.ElementTyp
   { id: 'bus', label: 'Structure / Bus', icon: Box },
   { id: 'propulsion', label: 'Propulsion', icon: Flame },
   { id: 'tank', label: 'Propellant Tank', icon: Compass },
-  { id: 'solar', label: 'Solar Arrays', icon: Zap },
+  { id: 'solar', label: 'Power (Solar / RTG)', icon: Zap },
   { id: 'battery', label: 'Battery Storage', icon: Battery },
   { id: 'antenna', label: 'Antenna / Comm', icon: Radio },
   { id: 'computer', label: 'Avionics', icon: Cpu },
@@ -409,6 +409,55 @@ export function SpacecraftBuilderView() {
                 <span className="text-cyan font-bold">
                   {formatDataRate(stats.dataRateMarsKbps)}
                 </span>
+              </div>
+            </div>
+
+            {/* Science Objectives Supported Panel */}
+            <div className="space-y-1.5 pt-2 border-t border-space-800">
+              <div className="flex justify-between items-center text-xs font-mono">
+                <span className="text-slate-400 flex items-center gap-1.5 font-bold uppercase tracking-wider">
+                  <Sparkles className="w-3.5 h-3.5 text-cyan" /> SCIENCE OBJECTIVES
+                </span>
+                <span className="text-cyan font-bold">
+                  {stats.totalSciencePotential} PTS
+                </span>
+              </div>
+              <div className="space-y-1 max-h-[140px] overflow-y-auto pr-0.5">
+                {AURORA_MISSION.secondaryObjectives.map((obj) => {
+                  const contributingInstruments = COMPONENT_CATALOG.filter(
+                    (comp) =>
+                      installedSet.has(comp.id) &&
+                      comp.scienceContributions?.some((sc) => sc.objectiveId === obj.id)
+                  );
+                  const isCovered = contributingInstruments.length > 0;
+                  const pointsContributed = contributingInstruments.reduce((acc, comp) => {
+                    const sc = comp.scienceContributions?.find((s) => s.objectiveId === obj.id);
+                    return acc + (sc ? sc.points : 0);
+                  }, 0);
+
+                  return (
+                    <div
+                      key={obj.id}
+                      className={`p-1.5 rounded text-[10px] font-mono flex items-center justify-between border ${
+                        isCovered
+                          ? 'bg-space-950 border-cyan/30 text-slate-200'
+                          : 'bg-space-950/40 border-space-850 text-slate-500'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 truncate">
+                        {isCovered ? (
+                          <CheckCircle2 className="w-3 h-3 text-cyan shrink-0" />
+                        ) : (
+                          <span className="w-3 h-3 rounded-full border border-slate-700 shrink-0"></span>
+                        )}
+                        <span className="truncate">{obj.title}</span>
+                      </div>
+                      <span className={isCovered ? 'text-cyan font-bold shrink-0 ml-1' : 'text-slate-600 shrink-0 ml-1'}>
+                        {pointsContributed}/{obj.points} pts
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>

@@ -55,22 +55,22 @@ export const PRESET_CONFIGURATIONS: {
   {
     presetId: 'flagship-surveyor',
     label: 'Odyssey Heavy Flagship',
-    badge: 'All-Instrument Suite',
-    description: 'Heavy flagship platform equipped with all 4 science instruments, UltraFlex multi-junction solar wings, and dual redundant avionics.',
+    badge: 'Flagship Platform',
+    description: 'Heavy flagship platform on the reinforced deep-space bus with dual science payloads and generous engineering margins.',
     config: {
       id: 'flagship-surveyor',
       name: 'Odyssey Flagship',
       installedComponentIds: [
         'bus-deepspace-flagship', // 480 kg, $110M
         'engine-biprop-leros', // 75 kg, $45M
-        'tank-highcap-large', // 70 kg, 1100 kg fuel, $50M
-        'solar-ultraflex-advanced', // 95 kg, $75M
+        'tank-composite-medium', // 42 kg dry, 650 kg fuel, $30M
+        'solar-articulated-wings', // 75 kg, $42M
         'battery-highcap-deep', // 55 kg, $28M
-        'antenna-hga-parabolic', // 48 kg, $55M
-        'computer-fault-tolerant-dual', // 24 kg, $50M
-        'thermal-active-heaters', // 38 kg, $25M
+        'antenna-mga-horn', // 18 kg, $22M
+        'computer-rad750-std', // 12 kg, $25M
+        'thermal-passive-mli', // 16 kg, $10M
         'sensor-camera-hires', // 45 kg, $48M
-        'sensor-subsurface-radar', // 38 kg, $44M
+        'sensor-spectrometer-ir', // 28 kg, $36M
       ],
       createdAt: Date.now(),
     },

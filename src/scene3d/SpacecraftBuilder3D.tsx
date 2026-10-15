@@ -1,9 +1,12 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, ContactShadows } from '@react-three/drei';
+import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { SpacecraftRig } from './SpacecraftRig';
 import { Starfield } from './Starfield';
 import { WebGLFallback } from './WebGLFallback';
+import { getComponentById } from '../simulation/physics';
+import { RotateCcw } from 'lucide-react';
 
 interface SpacecraftBuilder3DProps {
   installedComponentIds: string[];
@@ -15,6 +18,20 @@ export function SpacecraftBuilder3D({
   selectedComponentId,
 }: SpacecraftBuilder3DProps) {
   const [hasError, setHasError] = React.useState(false);
+  const controlsRef = useRef<OrbitControlsImpl>(null);
+
+  const selectedComp = selectedComponentId
+    ? getComponentById(selectedComponentId)
+    : null;
+  const isInstalled = selectedComponentId
+    ? installedComponentIds.includes(selectedComponentId)
+    : false;
+
+  const handleResetCamera = () => {
+    if (controlsRef.current) {
+      controlsRef.current.reset();
+    }
+  };
 
   if (hasError) {
     return (
@@ -63,6 +80,7 @@ export function SpacecraftBuilder3D({
           />
 
           <OrbitControls
+            ref={controlsRef}
             enablePan={false}
             enableZoom={true}
             minDistance={2.5}
@@ -71,6 +89,31 @@ export function SpacecraftBuilder3D({
           />
         </Canvas>
       </Suspense>
+
+      {/* Selected Component Inspection Badge */}
+      {selectedComp && (
+        <div className="absolute top-3 left-3 pointer-events-none text-[10px] font-mono bg-space-950/85 backdrop-blur-md px-2.5 py-1.5 rounded-lg border border-cyan/40 flex items-center gap-2 shadow-lg">
+          <span
+            className={`w-1.5 h-1.5 rounded-full ${
+              isInstalled ? 'bg-emerald-400 animate-ping' : 'bg-cyan'
+            }`}
+          ></span>
+          <span className="text-slate-400">
+            {isInstalled ? 'INSPECTING:' : 'CATALOG FOCUS:'}
+          </span>
+          <strong className="text-slate-100">{selectedComp.name}</strong>
+        </div>
+      )}
+
+      {/* Reset Camera Button */}
+      <button
+        onClick={handleResetCamera}
+        className="absolute top-3 right-3 text-[10px] font-mono text-slate-400 hover:text-cyan bg-space-900/80 hover:bg-space-850 px-2 py-1 rounded border border-space-700/60 transition-colors flex items-center gap-1 backdrop-blur"
+        title="Reset 3D Staging Bay Camera View"
+      >
+        <RotateCcw className="w-3 h-3" />
+        <span>Reset View</span>
+      </button>
 
       {/* Builder camera guidance pill */}
       <div className="absolute bottom-3 left-3 pointer-events-none text-[11px] font-mono text-slate-400 bg-space-900/80 backdrop-blur px-2.5 py-1 rounded border border-space-700/60 flex items-center gap-2">

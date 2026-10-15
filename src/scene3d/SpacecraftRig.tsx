@@ -109,6 +109,12 @@ export function SpacecraftRig({
       groupRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.8) * 0.08;
     }
 
+    // Dynamic selection pulse on highlighted component
+    if (highlightMat) {
+      highlightMat.emissiveIntensity =
+        0.45 + Math.sin(state.clock.elapsedTime * 5.0) * 0.3;
+    }
+
     if (flameRef.current) {
       // Engine exhaust flicker
       const pulse = 0.8 + Math.random() * 0.4;
